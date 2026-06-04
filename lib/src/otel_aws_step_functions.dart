@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_aws_step_functions_suppression.dart';
 
@@ -55,55 +54,73 @@ Future<T> tracedAwsStepFunctions<T>({
       tracer ?? OTel.tracerProvider().getTracer('otel_aws_step_functions');
   final span = t.startSpan('stepfunctions $operation', kind: SpanKind.client);
   try {
-    span.setStringAttribute('rpc.system', 'aws-api');
-    span.setStringAttribute('rpc.service', 'SFN');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('rpc.system', 'aws-api')]));
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('rpc.service', 'SFN')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.stateMachineArn != null) {
-        span.setStringAttribute(
-          'aws.sfn.state_machine.arn',
-          res.stateMachineArn!,
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            'aws.sfn.state_machine.arn',
+            res.stateMachineArn!,
+          )
+        ]));
       }
       if (res.executionArn != null) {
-        span.setStringAttribute('aws.sfn.execution.arn', res.executionArn!);
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString('aws.sfn.execution.arn', res.executionArn!)
+        ]));
       }
       if (res.executionName != null) {
-        span.setStringAttribute('aws.sfn.execution.name', res.executionName!);
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString('aws.sfn.execution.name', res.executionName!)
+        ]));
       }
       if (res.state != null) {
-        span.setStringAttribute('aws.sfn.state', res.state!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('aws.sfn.state', res.state!)]));
       }
       if (res.stateType != null) {
-        span.setStringAttribute('aws.sfn.state.type', res.stateType!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('aws.sfn.state.type', res.stateType!)]));
       }
       if (res.taskToken != null) {
-        span.setStringAttribute('aws.sfn.task_token', res.taskToken!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('aws.sfn.task_token', res.taskToken!)]));
       }
       if (res.status != null) {
-        span.setStringAttribute('aws.sfn.status', res.status!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('aws.sfn.status', res.status!)]));
       }
       if (res.cause != null) {
-        span.setStringAttribute('aws.sfn.cause', res.cause!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('aws.sfn.cause', res.cause!)]));
       }
       if (res.region != null) {
-        span.setStringAttribute('cloud.region', res.region!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('cloud.region', res.region!)]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('stepfunctions.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString('stepfunctions.error.code', res.errorCode!)
+        ]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'step_functions.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'step_functions.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
