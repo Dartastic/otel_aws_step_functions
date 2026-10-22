@@ -1,11 +1,12 @@
-// Licensed under the Dartastic Pro Software License Agreement.
+// Licensed under the Apache License, Version 2.0
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
-import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
+import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_aws_step_functions_suppression.dart';
 
 class AwsStepFunctionsResult {
+  /// Creates a result.
   const AwsStepFunctionsResult({
     this.stateMachineArn,
     this.executionArn,
@@ -35,8 +36,13 @@ class AwsStepFunctionsResult {
   final String? errorMessage;
 }
 
+/// What a traced call returned: the value for the caller plus fields
+/// recorded on the span.
 class AwsStepFunctionsCallResult<T> {
+  /// Creates a call result.
   const AwsStepFunctionsCallResult({required this.value, this.result});
+
+  /// The value returned to the caller.
   final T value;
   final AwsStepFunctionsResult? result;
 }
@@ -44,80 +50,81 @@ class AwsStepFunctionsCallResult<T> {
 Future<T> tracedAwsStepFunctions<T>({
   required String operation,
   required Future<AwsStepFunctionsCallResult<T>> Function() invoke,
-  Tracer? tracer,
+  APITracer? tracer,
 }) async {
   if (awsStepFunctionsInstrumentationSuppressed()) {
     final r = await invoke();
     return r.value;
   }
   final t =
-      tracer ?? OTel.tracerProvider().getTracer('otel_aws_step_functions');
+      tracer ?? OTelAPI.tracerProvider().getTracer('otel_aws_step_functions');
   final span = t.startSpan('stepfunctions $operation', kind: SpanKind.client);
   try {
     span.addAttributes(
-        OTel.attributes([OTel.attributeString('rpc.system', 'aws-api')]));
+        OTelAPI.attributes([OTelAPI.attributeString('rpc.system', 'aws-api')]));
     span.addAttributes(
-        OTel.attributes([OTel.attributeString('rpc.service', 'SFN')]));
+        OTelAPI.attributes([OTelAPI.attributeString('rpc.service', 'SFN')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.stateMachineArn != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
             'aws.sfn.state_machine.arn',
             res.stateMachineArn!,
           )
         ]));
       }
       if (res.executionArn != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString('aws.sfn.execution.arn', res.executionArn!)
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('aws.sfn.execution.arn', res.executionArn!)
         ]));
       }
       if (res.executionName != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString('aws.sfn.execution.name', res.executionName!)
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('aws.sfn.execution.name', res.executionName!)
         ]));
       }
       if (res.state != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('aws.sfn.state', res.state!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('aws.sfn.state', res.state!)]));
       }
       if (res.stateType != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('aws.sfn.state.type', res.stateType!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('aws.sfn.state.type', res.stateType!)]));
       }
       if (res.taskToken != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('aws.sfn.task_token', res.taskToken!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('aws.sfn.task_token', res.taskToken!)]));
       }
       if (res.status != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('aws.sfn.status', res.status!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('aws.sfn.status', res.status!)]));
       }
       if (res.cause != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('aws.sfn.cause', res.cause!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('aws.sfn.cause', res.cause!)]));
       }
       if (res.region != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('cloud.region', res.region!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('cloud.region', res.region!)]));
       }
       if (res.statusCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeInt('http.response.status_code', res.statusCode!)
+        ]));
       }
       if (res.errorCode != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString('stepfunctions.error.code', res.errorCode!)
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('stepfunctions.error.code', res.errorCode!)
         ]));
       }
       final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
-            ErrorResource.errorType.key,
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
+            ErrorAttributes.errorType.key,
             res.errorCode ?? 'step_functions.error',
           )
         ]));
